@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"aoc/day01"
+	"aoc/day02"
 )
 
 func main() {
@@ -18,6 +19,8 @@ func main() {
 	switch day {
 	case "1":
 		day01.Run()
+	case "2":
+		day02.Run()
 	default:
 		fmt.Println("Day not recognized")
 	}
