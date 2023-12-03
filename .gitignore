@@ -23,7 +23,4 @@ go.work
 # vscode directory
 .vscode
 
-# Helper files
-*.txt
-*.sh
 

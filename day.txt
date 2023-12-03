@@ -1,0 +1,23 @@
+package day03
+
+import (
+	"aoc/util"
+	"fmt"
+)
+
+func Run() {
+	lines := util.ReadInput("day.txt")
+	result := partA(lines)
+	fmt.Printf("partA: %d\n", result)
+
+	result = partB(lines)
+	fmt.Printf("partB: %d\n", result)
+}
+
+func partA(lines []string) int {
+	return 0
+}
+
+func partB(lines []string) int {
+	return 0
+}
