@@ -3,6 +3,8 @@ package day01
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPartA(t *testing.T) {
@@ -16,9 +18,7 @@ func TestPartA(t *testing.T) {
 
 	t.Run("problem test case", func(t *testing.T) {
 		result := partA(lines)
-		if result != expected {
-			t.Errorf("PartA(%v) = %d; want %d", lines, result, expected)
-		}
+		assert.Equal(t, expected, result, "PartA(%v) should equal %d", lines, expected)
 	})
 }
 
@@ -36,8 +36,6 @@ func TestPartB(t *testing.T) {
 
 	t.Run("problem test case", func(t *testing.T) {
 		result := partB(lines)
-		if result != expected {
-			t.Errorf("PartB(%v) = %d; want %d", lines, result, expected)
-		}
+		assert.Equal(t, expected, result, "PartB(%v) should equal %d", lines, expected)
 	})
 }
