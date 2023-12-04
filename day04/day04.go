@@ -3,6 +3,7 @@ package day04
 import (
 	"aoc/util"
 	"fmt"
+	"math"
 	"regexp"
 )
 
@@ -18,26 +19,22 @@ func Run() {
 func partA(lines []string) int {
 	var result int
 	for _, line := range lines {
-		var lineResult int
+		var score int
 		winning, owned := getNumberLists(line)
 		for _, num := range owned {
 			if util.Contains(winning, num) {
-				if lineResult == 0 {
-					lineResult++
-				} else {
-					lineResult *= 2
-				}
+				score++
 			}
 
 		}
-		result += lineResult
+		result += int(math.Pow(float64(2), 2-float64(score)))
 	}
 
 	return result
 }
 
 func partB(lines []string) int {
-	scratchcards := make(map[int]int)
+	scratchcards := make([]int, len(lines))
 
 	for i, line := range lines {
 		// add original card to scratchcards
