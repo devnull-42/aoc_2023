@@ -50,9 +50,15 @@ func partB(lines []string) int {
 	groups, labels := getMapGroups(lines[2:])
 	newRanges := make([][2]int, 0)
 
+	// loop through each label in order from input
 	for _, mapLabel := range labels {
 		mapGroup := groups[mapLabel]
+
 	seedGroupLoop:
+		// loop through each seed range. pop the first seed range off the list and compare it to each map range for
+		// the current label. if any part of the range matches the map range, modify the overlaping part of the range
+		// based on the map and save it to newRanges. the leftover range or ranges that did not match are appended to
+		// seedRanges.
 		for {
 			if len(seedRanges) == 0 {
 				seedRanges = append(seedRanges, newRanges...)
@@ -63,24 +69,34 @@ func partB(lines []string) int {
 			seedRange := seedRanges[0]
 			seedRanges = seedRanges[1:]
 
+			// look through each map range for the current label
 			for _, mapRange := range mapGroup {
 				destStart, sourceStart, rangeLen := mapRange[0], mapRange[1], mapRange[2]
 				overlapStart := util.Max(seedRange[0], sourceStart)
 				overlapEnd := util.Min(seedRange[1], sourceStart+rangeLen)
 				if overlapStart < overlapEnd {
+					// if there is an overlap creta e new range for the overlap and modify it based on the map
+					// then add it to newRanges
 					newRanges = append(newRanges, [2]int{overlapStart - sourceStart + destStart, overlapEnd - sourceStart + destStart})
 					if overlapStart > seedRange[0] {
+						// if there is a leftover range before the overlap, add it to seedRanges
 						seedRanges = append(seedRanges, [2]int{seedRange[0], overlapStart})
 					}
 					if overlapEnd < seedRange[1] {
+						// if there is a leftover range after the overlap, add it to seedRanges
 						seedRanges = append(seedRanges, [2]int{overlapEnd, seedRange[1]})
 					}
+					// break out of the map range loop and start over with the next seed range so the current seed range
+					// is not compared to more map ranges
 					continue seedGroupLoop
 				}
 			}
+			// if there was no overlap after checking all map ranges, add the seed range to newRanges
 			newRanges = append(newRanges, seedRange)
 		}
 	}
+
+	// find the lowest seed value
 	min := seedRanges[0][0]
 	for _, seedRange := range seedRanges {
 		if seedRange[0] < min {
@@ -111,6 +127,7 @@ func seedMap(numString string) (int, int, int) {
 	return result[0], result[1], result[2]
 }
 
+// returns map of label to seed map groups and list of labels in order
 func getMapGroups(lines []string) (map[string][][3]int, []string) {
 	groups := make(map[string][][3]int, 0)
 	reLabel := regexp.MustCompile(`^.*:$`)
