@@ -3,7 +3,6 @@ package day04
 import (
 	"aoc/util"
 	"fmt"
-	"math"
 	"regexp"
 )
 
@@ -23,11 +22,14 @@ func partA(lines []string) int {
 		winning, owned := getNumberLists(line)
 		for _, num := range owned {
 			if util.Contains(winning, num) {
-				score++
+				if score == 0 {
+					score++
+				} else {
+					score *= 2
+				}
 			}
-
 		}
-		result += int(math.Pow(float64(2), 2-float64(score)))
+		result += score
 	}
 
 	return result
