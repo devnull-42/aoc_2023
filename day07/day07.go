@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 func Run() {
@@ -80,36 +83,25 @@ func getHandValue(hand string) [6]int {
 		charCount[string(char)]++
 	}
 
-	switch len(charCount) {
-	case 1:
-		// 5 of a kind
+	counts := maps.Values(charCount)
+	slices.Sort(counts)
+
+	switch {
+	case slices.Equal(counts, []int{5}):
 		return getCardValues(hand, 7)
-	case 2:
-		for _, count := range charCount {
-			if count == 4 {
-				// 4 of a kind
-				return getCardValues(hand, 6)
-			}
-		}
-		// full house
+	case slices.Equal(counts, []int{1, 4}):
+		return getCardValues(hand, 6)
+	case slices.Equal(counts, []int{2, 3}):
 		return getCardValues(hand, 5)
-	case 3:
-		for _, count := range charCount {
-			if count == 3 {
-				// 3 of a kind
-				return getCardValues(hand, 4)
-			}
-		}
-		// two pair
+	case slices.Equal(counts, []int{1, 1, 3}):
+		return getCardValues(hand, 4)
+	case slices.Equal(counts, []int{1, 2, 2}):
 		return getCardValues(hand, 3)
-	case 4:
-		// 1 pair
+	case slices.Equal(counts, []int{1, 1, 1, 2}):
 		return getCardValues(hand, 2)
-	case 5:
-		// high card
+	case slices.Equal(counts, []int{1, 1, 1, 1, 1}):
 		return getCardValues(hand, 1)
 	default:
-		fmt.Println(hand, charCount)
 		panic(fmt.Sprintf("unexpected hand: %s", hand))
 	}
 }
@@ -150,53 +142,29 @@ func getHandValueB(hand string) [6]int {
 	}
 
 	if jokerCount == 5 {
-		// 5 of a kind
 		return getCardValuesB(hand, 7)
 	}
 
-	if jokerCount > 0 {
-		var maxChar string
-		var maxCount int
-		for char, count := range charCount {
-			if count > maxCount {
-				maxChar = char
-				maxCount = count
-			}
-		}
+	counts := maps.Values(charCount)
+	slices.Sort(counts)
+	counts[len(counts)-1] = counts[len(counts)-1] + jokerCount
 
-		charCount[maxChar] += jokerCount
-	}
-
-	switch len(charCount) {
-	case 1:
-		// 5 of a kind
+	switch {
+	case slices.Equal(counts, []int{5}):
 		return getCardValuesB(hand, 7)
-	case 2:
-		for _, count := range charCount {
-			if count == 4 {
-				// 4 of a kind
-				return getCardValuesB(hand, 6)
-			}
-		}
-		// full house
+	case slices.Equal(counts, []int{1, 4}):
+		return getCardValuesB(hand, 6)
+	case slices.Equal(counts, []int{2, 3}):
 		return getCardValuesB(hand, 5)
-	case 3:
-		for _, count := range charCount {
-			if count == 3 {
-				// 3 of a kind
-				return getCardValuesB(hand, 4)
-			}
-		}
-		// two pair
+	case slices.Equal(counts, []int{1, 1, 3}):
+		return getCardValuesB(hand, 4)
+	case slices.Equal(counts, []int{1, 2, 2}):
 		return getCardValuesB(hand, 3)
-	case 4:
-		// 1 pair
+	case slices.Equal(counts, []int{1, 1, 1, 2}):
 		return getCardValuesB(hand, 2)
-	case 5:
-		// high card
+	case slices.Equal(counts, []int{1, 1, 1, 1, 1}):
 		return getCardValuesB(hand, 1)
 	default:
-		fmt.Println(hand, charCount)
 		panic(fmt.Sprintf("unexpected hand: %s", hand))
 	}
 }
