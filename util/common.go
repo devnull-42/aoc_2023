@@ -62,3 +62,25 @@ func Min(a, b int) int {
 	}
 	return b
 }
+
+// gcd computes the Greatest Common Divisor of two integers.
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
+// lcm computes the Least Common Multiple of two integers.
+func lcm(a, b int) int {
+	return a / gcd(a, b) * b
+}
+
+// LcmMultiple computes the LCM of a variable number of integers.
+func LcmMultiple(numbers ...int) int {
+	result := numbers[0]
+	for _, num := range numbers[1:] {
+		result = lcm(result, num)
+	}
+	return result
+}
