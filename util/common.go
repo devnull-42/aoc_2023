@@ -84,3 +84,12 @@ func LcmMultiple(numbers ...int) int {
 	}
 	return result
 }
+
+// SliceSum returns the sum of all elements in a slice of ints.
+func SliceSum(numbers []int) int {
+	sum := 0
+	for _, num := range numbers {
+		sum += num
+	}
+	return sum
+}
