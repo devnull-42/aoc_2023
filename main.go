@@ -21,6 +21,7 @@ import (
 	"aoc/day15"
 	"aoc/day16"
 	"aoc/day17"
+	"aoc/day18"
 )
 
 func main() {
@@ -66,6 +67,8 @@ func main() {
 		day16.Run()
 	case "17":
 		day17.Run()
+	case "18":
+		day18.Run()
 	default:
 		fmt.Println("Day not recognized")
 	}
