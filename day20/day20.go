@@ -25,17 +25,19 @@ func partA(lines []string) int {
 
 	// send initial pulse
 	pulseChan <- Pulse{"button", "broadcaster", false}
+	buttonPresses := 1
 
 	lowPulseCount := 0
 	highPulseCount := 0
-	cycleCount := 1
-	cycleMap := make(map[int][2]int)
 
 PulseLoop:
 	for {
 		// loop while pulseChan is not empty
 		select {
 		case pulse := <-pulseChan:
+			if pulse.dest == "rx" && !pulse.strength {
+				return buttonPresses
+			}
 			if pulse.strength {
 				highPulseCount++
 			} else {
@@ -46,45 +48,52 @@ PulseLoop:
 			}
 			moduleMap[pulse.dest].Receive(pulse)
 		default:
-			for _, m := range moduleMap {
-				if !m.OriginalState() {
-					// if a module is not in it's original state then we need to send another pulse
-					pulseChan <- Pulse{"button", "broadcaster", false}
-					cycleMap[cycleCount] = [2]int{lowPulseCount, highPulseCount}
-					cycleCount++
-					if cycleCount > 10 {
-						break PulseLoop
-					}
-					continue PulseLoop
-				}
+			if buttonPresses < 1000 {
+				pulseChan <- Pulse{"button", "broadcaster", false}
+				buttonPresses++
+				continue PulseLoop
 			}
 			break PulseLoop
 		}
 	}
 
-	cycles := 1000 / cycleCount
-	remainder := 1000 % cycleCount
-
-	totalLowPulses := cycles * lowPulseCount
-	totalHighPulses := cycles * highPulseCount
-
-	if remainder > 0 {
-		totalLowPulses += cycleMap[remainder][0]
-		totalHighPulses += cycleMap[remainder][1]
-	}
-
-	fmt.Printf("cycleMap: %+v\n", cycleMap)
-	fmt.Printf("cycleCount: %d\n", cycleCount)
-	fmt.Printf("cycles: %d, remainder: %d\n", cycles, remainder)
-	fmt.Printf("lowPulseCount: %d, highPulseCount: %d\n", lowPulseCount, highPulseCount)
-	fmt.Printf("totalLowPulses: %d, totalHighPulses: %d\n", totalLowPulses, totalHighPulses)
-
-	result := totalLowPulses * totalHighPulses
+	result := lowPulseCount * highPulseCount
 	return result
 }
 
 func partB(lines []string) int {
-	return 0
+	pulseChan := make(chan Pulse, 200)
+	defer close(pulseChan)
+
+	moduleMap := BuildModules(lines, pulseChan)
+	monitor := getMonitor(moduleMap)
+
+	// send initial pulse
+	pulseChan <- Pulse{"button", "broadcaster", false}
+	buttonPresses := 1
+
+	for {
+		// loop while pulseChan is not empty
+		select {
+		case pulse := <-pulseChan:
+			if pulse.dest == "nc" && pulse.strength {
+				monitor.AddInput(pulse.source, buttonPresses)
+				if monitor.Check(buttonPresses, moduleMap[monitor.name]) {
+					return monitor.GetLCM()
+				}
+			}
+			if _, exists := moduleMap[pulse.dest]; !exists {
+				continue
+			}
+			moduleMap[pulse.dest].Receive(pulse)
+		default:
+			// fmt.Printf("buttonPresses: %d\n", buttonPresses)
+			// fmt.Printf("monitor: %s\n", monitor.String())
+			pulseChan <- Pulse{"button", "broadcaster", false}
+			buttonPresses++
+
+		}
+	}
 }
 
 type Pulse struct {
@@ -108,6 +117,7 @@ type Module interface {
 	OriginalState() bool
 	GetOutput() []string
 	AddInput(input string)
+	GetInputs() map[string]bool
 }
 
 type FlipFlop struct {
@@ -140,6 +150,10 @@ func (f *FlipFlop) GetOutput() []string {
 }
 
 func (f *FlipFlop) AddInput(input string) {}
+
+func (f *FlipFlop) GetInputs() map[string]bool {
+	return nil
+}
 
 type Conjunction struct {
 	name   string
@@ -186,6 +200,10 @@ func (c *Conjunction) AddInput(input string) {
 	c.inputs[input] = false
 }
 
+func (c *Conjunction) GetInputs() map[string]bool {
+	return c.inputs
+}
+
 type Broadcast struct {
 	name   string
 	output []string
@@ -211,6 +229,10 @@ func (b *Broadcast) GetOutput() []string {
 }
 
 func (b *Broadcast) AddInput(input string) {}
+
+func (b *Broadcast) GetInputs() map[string]bool {
+	return nil
+}
 
 func BuildModules(lines []string, send chan Pulse) map[string]Module {
 	modules := make(map[string]Module)
@@ -241,4 +263,56 @@ func BuildModules(lines []string, send chan Pulse) map[string]Module {
 		}
 	}
 	return modules
+}
+
+// part b functions
+
+func getMonitor(modules map[string]Module) Monitor {
+	var monitor Monitor
+	for k, m := range modules {
+		if slices.Contains(m.GetOutput(), "rx") {
+			monitor = Monitor{k, make(map[string]int)}
+		}
+	}
+
+	for k, m := range modules {
+		if slices.Contains(m.GetOutput(), monitor.name) {
+			monitor.inputs[k] = 0
+		}
+	}
+	return monitor
+}
+
+type Monitor struct {
+	name   string
+	inputs map[string]int
+}
+
+func (m Monitor) Check(buttonPresses int, module Module) bool {
+	for _, v := range m.inputs {
+		if v == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (m Monitor) AddInput(source string, buttonPresses int) {
+	if v, exists := m.inputs[source]; exists {
+		if v == 0 {
+			m.inputs[source] = buttonPresses
+		}
+	}
+}
+
+func (m Monitor) GetLCM() int {
+	buttonPresses := make([]int, 0)
+	for _, v := range m.inputs {
+		buttonPresses = append(buttonPresses, v)
+	}
+	return util.LcmMultiple(buttonPresses...)
+}
+
+func (m Monitor) String() string {
+	return fmt.Sprintf("Monitor(%s, %+v)", m.name, m.inputs)
 }
