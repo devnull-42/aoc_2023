@@ -18,14 +18,14 @@ func partA(lines []string, steps int) int {
 	grid, start := getGridAndStart(lines)
 	result := modifiedBFS(grid, start, steps)
 
-	return len(result)
+	return result
 }
 
 func partB(lines []string, steps int) int {
 	grid, start := getGridAndStart(lines)
-	result := modifiedBFS_B(grid, start, steps)
+	result := partBSolution(grid, start, steps)
 
-	return len(result)
+	return result
 }
 
 // get the grid and start location
@@ -53,19 +53,7 @@ func (loc Location) String() string {
 	return fmt.Sprintf("%d,%d", loc.row, loc.col)
 }
 
-func resizeLoc(loc Location, rowSize, colSize int) Location {
-	newRow := loc.row % rowSize
-	newCol := loc.col % colSize
-	if newRow < 0 {
-		newRow += rowSize
-	}
-	if newCol < 0 {
-		newCol += colSize
-	}
-	return Location{newRow, newCol}
-}
-
-func modifiedBFS(g [][]string, start Location, maxSteps int) map[string]struct{} {
+func modifiedBFS(g [][]string, start Location, maxSteps int) int {
 	type queueItem struct {
 		loc   Location
 		steps int
@@ -99,43 +87,44 @@ func modifiedBFS(g [][]string, start Location, maxSteps int) map[string]struct{}
 			}
 		}
 	}
-	return result
+	return len(result)
 }
 
-func modifiedBFS_B(g [][]string, start Location, maxSteps int) map[string]struct{} {
-	type queueItem struct {
-		loc   Location
-		steps int
-	}
+// This is a solution by HyperNeutrino. It is what I was trying to do but couldn't get there.
+// It doesn't work with the test data, but it does work with the real data. So I'm sure there is a better solution.
+// There is a solution that uses the quadratic formula to solve the problem, but it's
+// not what I was trying to do. I modified it to use my functions and structs since his solution
+// was in python.
+func partBSolution(grid [][]string, start Location, maxSteps int) int {
+	gridSize := len(grid)
+	gridWidth := maxSteps/gridSize - 1
 
-	queue := []queueItem{{start, maxSteps}}
-	visited := make(map[string]struct{})
-	result := make(map[string]struct{})
+	odd := (gridWidth/2*2 + 1) * (gridWidth/2*2 + 1)
+	even := ((gridWidth + 1) / 2 * 2) * ((gridWidth + 1) / 2 * 2)
 
-	directions := [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+	oddResults := modifiedBFS(grid, start, gridSize*2+1)
+	evenResults := modifiedBFS(grid, start, gridSize*2)
 
-	for len(queue) > 0 {
-		loc, steps := queue[0].loc, queue[0].steps
-		queue = queue[1:]
+	topCorner := modifiedBFS(grid, Location{gridSize - 1, start.col}, gridSize-1)
+	bottomCorner := modifiedBFS(grid, Location{0, start.col}, gridSize-1)
+	rightCorner := modifiedBFS(grid, Location{start.row, 0}, gridSize-1)
+	leftCorner := modifiedBFS(grid, Location{start.row, gridSize - 1}, gridSize-1)
 
-		if steps%2 == 0 {
-			result[loc.String()] = struct{}{}
-		}
-		if steps == 0 {
-			continue
-		}
+	smallEdgeTopRight := modifiedBFS(grid, Location{gridSize - 1, 0}, gridSize/2-1)
+	smallEdgeBottomRight := modifiedBFS(grid, Location{0, 0}, gridSize/2-1)
+	smallEdgeTopLeft := modifiedBFS(grid, Location{gridSize - 1, gridSize - 1}, gridSize/2-1)
+	smallEdgeBottomLeft := modifiedBFS(grid, Location{0, gridSize - 1}, gridSize/2-1)
 
-		for _, dir := range directions {
-			nextLoc := Location{loc.row + dir[0], loc.col + dir[1]}
-			resizedLoc := resizeLoc(nextLoc, len(g), len(g[0]))
-			if g[resizedLoc.row][resizedLoc.col] == "#" {
-				continue
-			}
-			if _, exists := visited[nextLoc.String()]; !exists {
-				visited[nextLoc.String()] = struct{}{}
-				queue = append(queue, queueItem{nextLoc, steps - 1})
-			}
-		}
-	}
+	bigEdgeTopRight := modifiedBFS(grid, Location{gridSize - 1, 0}, gridSize*3/2-1)
+	bigEdgeBottomRight := modifiedBFS(grid, Location{0, 0}, gridSize*3/2-1)
+	bigEdgeTopLeft := modifiedBFS(grid, Location{gridSize - 1, gridSize - 1}, gridSize*3/2-1)
+	bigEdgeBottomLeft := modifiedBFS(grid, Location{0, gridSize - 1}, gridSize*3/2-1)
+
+	result := odd*oddResults +
+		even*evenResults +
+		topCorner + bottomCorner + rightCorner + leftCorner +
+		(gridWidth+1)*(smallEdgeBottomLeft+smallEdgeBottomRight+smallEdgeTopLeft+smallEdgeTopRight) +
+		gridWidth*(bigEdgeBottomLeft+bigEdgeBottomRight+bigEdgeTopLeft+bigEdgeTopRight)
+
 	return result
 }
