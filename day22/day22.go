@@ -25,11 +25,20 @@ func partA(lines []string) int {
 
 	supports, supportedBy := getSupports(bricks)
 
-	return getRedundant(supports, supportedBy)
+	return getRedundant(supports, supportedBy, bricks)
 }
 
 func partB(lines []string) int {
-	return 0
+
+	bricks := getBricks(lines)
+	bricks.Sort()
+
+	dropBricks(bricks)
+	bricks.Sort()
+
+	supports, supportedBy := getSupports(bricks)
+
+	return disintegrate(bricks, supports, supportedBy)
 }
 
 type Bricks []Brick
@@ -47,12 +56,11 @@ func (b Bricks) Print() {
 }
 
 type Brick struct {
-	BrickNum               int
 	X1, Y1, X2, Y2, Z1, Z2 int
 }
 
 func (b Brick) String() string {
-	return fmt.Sprintf("#%d: %d,%d,%d~%d,%d,%d", b.BrickNum, b.X1, b.Y1, b.Z1, b.X2, b.Y2, b.Z2)
+	return fmt.Sprintf("%d,%d,%d~%d,%d,%d", b.X1, b.Y1, b.Z1, b.X2, b.Y2, b.Z2)
 }
 
 func getBricks(lines []string) Bricks {
@@ -60,7 +68,6 @@ func getBricks(lines []string) Bricks {
 	for i, line := range lines {
 		var b Brick
 		fmt.Sscanf(line, "%d,%d,%d~%d,%d,%d", &b.X1, &b.Y1, &b.Z1, &b.X2, &b.Y2, &b.Z2)
-		b.BrickNum = i
 		bricks[i] = b
 	}
 	return bricks
@@ -89,33 +96,84 @@ func getSupports(bricks Bricks) (setMap, setMap) {
 	supports := make(setMap)
 	supportedBy := make(setMap)
 	for i, brick := range bricks {
-		if _, ok := supports[brick.BrickNum]; !ok {
-			supports[brick.BrickNum] = make(map[int]struct{})
+		if _, ok := supports[i]; !ok {
+			supports[i] = make(map[int]struct{})
 		}
-		if _, ok := supportedBy[brick.BrickNum]; !ok {
-			supportedBy[brick.BrickNum] = make(map[int]struct{})
+		if _, ok := supportedBy[i]; !ok {
+			supportedBy[i] = make(map[int]struct{})
 		}
 		for j, check := range bricks[:i] {
 			if overlaps(check, brick) && brick.Z1 == check.Z2+1 {
-				supports[bricks[j].BrickNum][bricks[i].BrickNum] = struct{}{}
-				supportedBy[bricks[i].BrickNum][bricks[j].BrickNum] = struct{}{}
+				supports[j][i] = struct{}{}
+				supportedBy[i][j] = struct{}{}
 			}
 		}
 	}
 	return supports, supportedBy
 }
 
-func getRedundant(supports, supportedBy setMap) int {
-	result := make(map[int]struct{})
-	for brickNum, supts := range supports {
-		for supt := range supts {
-			if len(supportedBy[supt]) >= 2 {
-				result[brickNum] = struct{}{}
+func getRedundant(supports, supportedBy setMap, bricks Bricks) int {
+	result := 0
+
+	for i := range bricks {
+		allGood := true
+		for j := range supports[i] {
+			if len(supportedBy[j]) < 2 {
+				allGood = false
+				break
 			}
 		}
-		if len(supports[brickNum]) == 0 {
-			result[brickNum] = struct{}{}
+		if allGood {
+			result++
 		}
 	}
-	return len(result)
+	return result
+}
+
+type queue []int
+
+func (q *queue) push(i int) {
+	*q = append(*q, i)
+}
+func (q *queue) pop() int {
+	i := (*q)[0]
+	*q = (*q)[1:]
+	return i
+}
+
+func disintegrate(bricks Bricks, supports, supportedBy setMap) int {
+	result := 0
+	for i := range bricks {
+		q := make(queue, 0)
+		falling := make(map[int]bool)
+
+		for j := range supports[i] {
+			if len(supportedBy[j]) == 1 {
+				q.push(j)
+				falling[j] = true
+			}
+		}
+		falling[i] = true
+
+		for len(q) > 0 {
+			j := q.pop()
+			for k := range supports[j] {
+				if !falling[k] {
+					allInFalling := true
+					for l := range supportedBy[k] {
+						if !falling[l] {
+							allInFalling = false
+							break
+						}
+					}
+					if allInFalling {
+						q.push(k)
+						falling[k] = true
+					}
+				}
+			}
+		}
+		result += len(falling) - 1
+	}
+	return result
 }
