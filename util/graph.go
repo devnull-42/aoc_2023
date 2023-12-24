@@ -51,3 +51,49 @@ func NewGraph() *Graph {
 		Edges:   make(map[string][]*Edge),
 	}
 }
+
+// TopologicalSort performs a topological sort on the graph
+func (g *Graph) TopologicalSort() []*Node {
+	var result []*Node
+	visited := make(map[*Node]bool)
+	var visit func(u *Node)
+
+	visit = func(u *Node) {
+		if !visited[u] {
+			visited[u] = true
+			for _, edge := range g.Edges[u.Name] {
+				visit(edge.Node)
+			}
+			result = append([]*Node{u}, result...)
+		}
+	}
+
+	for _, node := range g.Nodes {
+		visit(node)
+	}
+
+	return result
+}
+
+// LongestPath finds the longest path between two nodes in the graph
+func (g *Graph) LongestPath(src, dest *Node) int {
+	topOrder := g.TopologicalSort()
+	dist := make(map[*Node]int)
+
+	for _, node := range g.Nodes {
+		dist[node] = int(^uint(0) >> 1) // Initialize as negative infinity
+	}
+	dist[src] = 0
+
+	for _, node := range topOrder {
+		if dist[node] != int(^uint(0)>>1) {
+			for _, edge := range g.Edges[node.Name] {
+				if dist[edge.Node] < dist[node]+edge.Weight {
+					dist[edge.Node] = dist[node] + edge.Weight
+				}
+			}
+		}
+	}
+
+	return dist[dest]
+}
