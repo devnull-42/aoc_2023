@@ -20,11 +20,14 @@ type Graph struct {
 }
 
 // AddNode adds a new node to the graph, ensuring no duplicates by name
-func (g *Graph) AddNode(n *Node) {
-	if _, exists := g.NodeMap[n.Name]; !exists {
+func (g *Graph) AddNode(n *Node) *Node {
+	node, exists := g.NodeMap[n.Name]
+	if !exists {
 		g.Nodes = append(g.Nodes, n)
 		g.NodeMap[n.Name] = n
+		return n
 	}
+	return node
 }
 
 // GetNode returns the node with the given name, using the map for O(1) lookup
